@@ -1,6 +1,6 @@
 services:
   9router:
-    image: decolua/9router:latest
+    image: 9router:latest
     container_name: 9router
     restart: always
     ports:
@@ -24,6 +24,20 @@ services:
     restart: always
     ports:
       - "8787:8787"
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: always
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      WATCHTOWER_CLEANUP: "true"
+      WATCHTOWER_POLL_INTERVAL: "300"
+      WATCHTOWER_LABEL_ENABLE: "false"
+      WATCHTOWER_PULL: "true"
+      DOCKER_API_VERSION: "1.44"
+    command: 9router headroom
 
 volumes:
   9router-data:
