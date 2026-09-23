@@ -1,6 +1,6 @@
 services:
   9router:
-    image: 9router:latest
+    image: decolua/9router:latest
     container_name: 9router
     restart: always
     ports:
@@ -33,7 +33,9 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
     environment:
       WATCHTOWER_CLEANUP: "true"
-      WATCHTOWER_POLL_INTERVAL: "300"
+      # Hourly poll: frequent enough to catch new releases quickly without
+      # tripping Docker Hub's anonymous-pull rate limit over a full day.
+      WATCHTOWER_POLL_INTERVAL: "3600"
       WATCHTOWER_LABEL_ENABLE: "false"
       WATCHTOWER_PULL: "true"
       DOCKER_API_VERSION: "1.44"
