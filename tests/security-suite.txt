@@ -1,0 +1,11 @@
+# Security regression tests. CI runs these as a hard gate: any failure blocks the PR.
+# Paths are relative to tests/. Add a regression test here when you fix a vulnerability,
+# and keep only tests that are deterministic (no live network, no timing).
+unit/dashboard-guard.test.js
+unit/custom-server-peer-headers.test.js
+unit/local-request-peer-trust-3294.test.js
+unit/ssrf-guard-hardening.test.js
+unit/search-ssrf-guard.test.js
+unit/cowork-mcp-ssrf-guard.test.js
+unit/request-details-redaction.test.js
+unit/xiaomi-mimo-login-session-security.test.js
