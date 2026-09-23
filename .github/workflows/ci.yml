@@ -37,7 +37,14 @@ jobs:
         working-directory: tests
       - name: Run tests listed in tests/security-suite.txt (hard gate)
         working-directory: tests
-        run: npx vitest run $(grep -vE '^\s*(#|$)' security-suite.txt)
+        # Entries for tests that land in a not-yet-merged PR are skipped with a warning,
+        # so they switch on automatically once merged.
+        run: |
+          files=()
+          while read -r f; do
+            if [ -f "$f" ]; then files+=("$f"); else echo "::warning file=tests/security-suite.txt::$f not found yet, skipped"; fi
+          done < <(grep -vE '^\s*(#|$)' security-suite.txt | tr -d '\r')
+          npx vitest run "${files[@]}"
 
   test-suite:
     name: Full test suite (no-regression gate)
