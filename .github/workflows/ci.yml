@@ -31,7 +31,9 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       # No committed root lockfile (package-lock.json is gitignored), so `npm ci` is not possible.
       - run: npm install --no-audit --no-fund
-      - run: npm install --no-audit --no-fund
+      # --legacy-peer-deps: without a lockfile, npm's peer-set resolver crashes on vitest 4
+      # ("Cannot read properties of null (reading 'edgesOut')").
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
         working-directory: tests
       - name: Run tests listed in tests/security-suite.txt (hard gate)
         working-directory: tests
@@ -47,7 +49,9 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
       - run: npm install --no-audit --no-fund
-      - run: npm install --no-audit --no-fund
+      # --legacy-peer-deps: without a lockfile, npm's peer-set resolver crashes on vitest 4
+      # ("Cannot read properties of null (reading 'edgesOut')").
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
         working-directory: tests
       # The suite is not all-green yet; known failures live in
       # tests/__baseline__/known-fails.txt. The gate fails only on a pass→fail change.
@@ -95,9 +99,12 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    # Needs Settings → Code security → Dependency graph. Advisory until that is enabled;
+    # then drop continue-on-error so it blocks.
+    continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Blocks PRs that add a dependency with a known high/critical advisory.
+      # Flags PRs that add a dependency with a known high/critical advisory.
       - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
