@@ -11,6 +11,21 @@ import { isLocalRequest } from "@/dashboardGuard";
 const RESET_HINT = "Forgot password? Reset to default via 9Router CLI → Settings → Reset Password to Default.";
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
 
+// Example values from .env.example / README / gitbook. Copied verbatim they are as public
+// as the built-in default, so they must not unlock the remote-login path either.
+const PLACEHOLDER_INITIAL_PASSWORDS = new Set([
+  "change-me",
+  "your-password",
+  "your-secure-password",
+  "votre-mot-de-passe",
+  "tu-contraseña",
+]);
+
+function hasOperatorInitialPassword() {
+  const value = process.env.INITIAL_PASSWORD;
+  return Boolean(value) && !PLACEHOLDER_INITIAL_PASSWORDS.has(value.trim());
+}
+
 function isTunnelRequest(request, settings) {
   const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
   const tunnelHost = settings.tunnelUrl ? new URL(settings.tunnelUrl).hostname.toLowerCase() : "";
@@ -65,7 +80,7 @@ export async function POST(request) {
       // Default password still in use on a remote client → force a password
       // change before the dashboard is exposed remotely (keeps local UX intact).
       const mustChangePassword =
-        !storedHash && !process.env.INITIAL_PASSWORD && !isLocalRequest(request);
+        !storedHash && !hasOperatorInitialPassword() && !isLocalRequest(request);
 
       if (mustChangePassword) {
         // Do NOT issue a session token: a fresh install's default password is
