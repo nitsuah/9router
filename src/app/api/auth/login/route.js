@@ -7,24 +7,10 @@ import { isOidcConfigured } from "@/lib/auth/oidc";
 import { isSamlConfigured } from "@/lib/auth/saml.js";
 import { checkLock, recordFail, recordSuccess, getClientIp } from "@/lib/auth/loginLimiter";
 import { isLocalRequest } from "@/dashboardGuard";
+import { hasOperatorInitialPassword } from "@/lib/auth/initialPassword";
 
 const RESET_HINT = "Forgot password? Reset to default via 9Router CLI → Settings → Reset Password to Default.";
 const NO_STORE_HEADERS = { "Cache-Control": "no-store" };
-
-// Example values from .env.example / README / gitbook. Copied verbatim they are as public
-// as the built-in default, so they must not unlock the remote-login path either.
-const PLACEHOLDER_INITIAL_PASSWORDS = new Set([
-  "change-me",
-  "your-password",
-  "your-secure-password",
-  "votre-mot-de-passe",
-  "tu-contraseña",
-]);
-
-function hasOperatorInitialPassword() {
-  const value = process.env.INITIAL_PASSWORD;
-  return Boolean(value) && !PLACEHOLDER_INITIAL_PASSWORDS.has(value.trim());
-}
 
 function isTunnelRequest(request, settings) {
   const host = (request.headers.get("host") || "").split(":")[0].toLowerCase();
