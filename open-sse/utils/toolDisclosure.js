@@ -103,18 +103,23 @@ function getToolSetId(tools) {
   return tools.map(getToolName).sort().join("|");
 }
 
+// Query = the last user turn that states the task. Claude-format tool loops send each
+// tool result back as a user turn of only tool_result blocks; querying on that empty
+// text would fall back to declaration order and reshuffle the tool set mid-loop.
 function extractLastUserMessage(body) {
   const messages = Array.isArray(body?.messages) ? body.messages : [];
   for (let i = messages.length - 1; i >= 0; i--) {
     const msg = messages[i];
     if (msg?.role !== "user") continue;
-    if (typeof msg.content === "string") return msg.content;
-    if (Array.isArray(msg.content)) {
-      return msg.content
+    let text = "";
+    if (typeof msg.content === "string") text = msg.content;
+    else if (Array.isArray(msg.content)) {
+      text = msg.content
         .filter((b) => b?.type === "text" || typeof b?.text === "string")
         .map((b) => b.text || "")
         .join(" ");
     }
+    if (text.trim()) return text;
   }
   return "";
 }

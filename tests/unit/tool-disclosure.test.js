@@ -90,6 +90,22 @@ describe("extractLastUserMessage", () => {
   });
 });
 
+// #3668: "history-referenced tools remain available across multi-turn tool loops".
+// In a Claude-format loop the newest user turn is only tool_result blocks; the query
+// must come from the last turn that actually states the task.
+describe("extractLastUserMessage in a tool loop", () => {
+  it("skips tool_result-only user turns and uses the last real request", () => {
+    const body = {
+      messages: [
+        { role: "user", content: "read the config file and update the port" },
+        { role: "assistant", content: [{ type: "tool_use", id: "t1", name: "Read", input: { file_path: "a" } }] },
+        { role: "user", content: [{ type: "tool_result", tool_use_id: "t1", content: "port=80" }] },
+      ],
+    };
+    expect(extractLastUserMessage(body)).toBe("read the config file and update the port");
+  });
+});
+
 describe("extractPinnedNames", () => {
   it("always includes ToolSearch", () => {
     const pinned = extractPinnedNames({});
@@ -163,6 +179,35 @@ describe("disclosureTools", () => {
     const prior = [{ role: "assistant", content: [{ type: "tool_use", name: "mcp__stripe__list_customers" }] }];
     const { tools: result } = disclosureTools(TOOLS, body("what files exist?", prior), "conn4", { maxTools: 5 });
     expect(result.map((t) => t.name)).toContain("mcp__stripe__list_customers");
+  });
+
+  // #3668: mid-loop turns carry only tool_result blocks. Selection must stay on the task
+  // (and stay stable, so the cached tools prefix isn't rewritten every turn).
+  it("keeps the task's tools selected on tool_result-only turns of a Claude tool loop", () => {
+    const task = "read a file from the filesystem";
+    const turn1 = { messages: [{ role: "user", content: task }] };
+    const turn2 = {
+      messages: [
+        { role: "user", content: task },
+        { role: "assistant", content: [{ type: "tool_use", id: "t1", name: "mcp__filesystem__write_file", input: {} }] },
+        { role: "user", content: [{ type: "tool_result", tool_use_id: "t1", content: "a.txt b.txt" }] },
+      ],
+    };
+
+    const first = disclosureTools(TOOLS, turn1, "conn-loop", { maxTools: 8 }).tools.map((t) => t.name);
+    const second = disclosureTools(TOOLS, turn2, "conn-loop", { maxTools: 8 }).tools.map((t) => t.name);
+
+    expect(second).toContain("mcp__filesystem__read_file");
+    expect(second).toContain("mcp__filesystem__write_file"); // history-pinned
+    for (const name of first) expect(second).toContain(name);
+  });
+
+  // #3668 adversarial case: the task needs a tool its wording never names. BM25 can't
+  // find it lexically, so the discovery escape hatch (ToolSearch) must always survive.
+  it("still exposes ToolSearch when the needed tool shares no words with the request", () => {
+    const { tools: result } = disclosureTools(TOOLS, body("tidy up whatever is stale"), "conn-adv", { maxTools: 5 });
+    expect(result.map((t) => t.name)).toContain("ToolSearch");
+    expect(result.length).toBeLessThanOrEqual(5);
   });
 
   it("ranks filesystem tools near top for a file query", () => {
