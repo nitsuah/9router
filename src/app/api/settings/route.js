@@ -3,6 +3,9 @@ import { getSettings, updateSettings } from "@/lib/localDb";
 import { applyOutboundProxyEnv } from "@/lib/network/outboundProxy";
 import { resetComboRotation } from "open-sse/services/combo.js";
 import bcrypt from "bcryptjs";
+import { verifyDashboardPassword } from "@/lib/auth/dashboardSession";
+import { hasValidCliToken } from "@/dashboardGuard";
+import { reauthRequiredKeys, REAUTH_REQUIRED_CODE } from "@/lib/auth/settingsReauth";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -12,31 +15,7 @@ const SETTINGS_RESPONSE_HEADERS = {
 };
 
 // Secrets must never be mass-assigned from request body (CWE-915)
-// Security-critical settings that must be explicitly handled, not mass-assigned
-const PROTECTED_SETTING_KEYS = [
-  "password",
-  "mitmSudoEncrypted",
-  "requireLogin",
-  "requireApiKey",
-  "authMode",
-  "ssoType",
-  "oidcIssuerUrl",
-  "oidcClientId",
-  "oidcClientSecret",
-  "oidcScopes",
-  "oidcLoginLabel",
-  "samlEntryPoint",
-  "samlIssuer",
-  "samlCert",
-  "samlLoginLabel",
-  "samlAttributeEmail",
-  "samlAttributeName",
-  "tunnelDashboardAccess",
-  "enableObservability",
-  "outboundProxyEnabled",
-  "outboundProxyUrl",
-  "outboundNoProxy",
-];
+const PROTECTED_SETTING_KEYS = ["password", "mitmSudoEncrypted"];
 
 export async function GET() {
   try {
@@ -66,6 +45,18 @@ export async function PATCH(request) {
     // Strip protected secrets before any internal handling sets them
     for (const key of PROTECTED_SETTING_KEYS) delete body[key];
 
+    // Security downgrades / auth repointing need the current password (or the local
+    // CLI token), not just a session — GHSA-vmjq-hvgq-2wv4.
+    const reauthKeys = reauthRequiredKeys(body, await getSettings());
+    if (reauthKeys.length && !(await hasValidCliToken(request))) {
+      if (!(await verifyDashboardPassword(body.currentPassword))) {
+        return NextResponse.json(
+          { error: "Enter your current dashboard password to change these security settings.", code: REAUTH_REQUIRED_CODE, fields: reauthKeys },
+          { status: 401, headers: SETTINGS_RESPONSE_HEADERS }
+        );
+      }
+    }
+
     // If updating password, hash it
     if (body.newPassword) {
       const settings = await getSettings();
@@ -93,6 +84,9 @@ export async function PATCH(request) {
       delete body.newPassword;
       delete body.currentPassword;
     }
+
+    // Re-auth input only; never persist it (the newPassword branch above consumes it).
+    delete body.currentPassword;
 
     if (Object.prototype.hasOwnProperty.call(body, "oidcClientSecret")) {
       if (!body.oidcClientSecret || !String(body.oidcClientSecret).trim()) {
