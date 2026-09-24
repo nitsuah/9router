@@ -106,13 +106,24 @@ jobs:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Needs Settings → Code security → Dependency graph. Advisory until that is enabled;
-    # then drop continue-on-error so it blocks.
-    continue-on-error: true
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      # Flags PRs that add a dependency with a known high/critical advisory.
-      - uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
+      # The action needs Settings → Code security → Dependency graph. Until a maintainer
+      # enables it, skip with a notice instead of showing a red check; it starts
+      # enforcing automatically once the graph is on.
+      - name: Check dependency graph
+        id: graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh api "repos/${{ github.repository }}/dependency-graph/sbom" --silent 2>/dev/null; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::Dependency graph is disabled for this repository; skipping dependency review."
+          fi
+      # Blocks PRs that add a dependency with a known high/critical advisory.
+      - if: steps.graph.outputs.enabled == 'true'
+        uses: actions/dependency-review-action@a1d282b36b6f3519aa1f3fc636f609c47dddb294 # v5.0.0
         with:
           fail-on-severity: high
 
@@ -122,8 +133,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     # Advisory for now: master still has ~800 existing ESLint findings, so this only
-    # reports on files the PR touches and does not block. Flip to blocking once clean.
-    continue-on-error: true
+    # reports on files the PR touches, as annotations, and never turns the check red.
+    # Remove the step's continue-on-error to make it blocking once master is clean.
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -133,6 +144,7 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
       - run: npm install --no-audit --no-fund
       - name: ESLint on changed JS files
+        continue-on-error: true
         env:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
