@@ -2,7 +2,7 @@ import { detectFormat, getTargetFormat, resolveTransport } from "../services/pro
 import { translateRequest } from "../translator/index.js";
 import { applyThinking, extractThinking, stripThinkingSuffix } from "../translator/concerns/thinkingUnified.js";
 import { FORMATS } from "../translator/formats.js";
-import { normalizeClaudePassthrough, anchorClaudeCache } from "../translator/formats/claude.js";
+import { normalizeClaudePassthrough, anchorClaudeCache, lastCacheableToolIndex } from "../translator/formats/claude.js";
 import { createStreamController } from "../utils/streamHandler.js";
 import { refreshWithRetry } from "../services/tokenRefresh.js";
 import { createRequestLogger } from "../utils/requestLogger.js";
@@ -273,9 +273,14 @@ export async function handleChatCore({ body, modelInfo, credentials, log, onCred
     // runs after all disclosure passes so the annotation always lands correctly.
     // Passthrough: skip when no filtering occurred (client's annotation was
     // already on the correct last tool).
-    if (translatedBody.tools.length > 0 && (!passthrough || translatedBody.tools.length !== beforeN)) {
+    // Claude-format bodies only: cache_control is an Anthropic field that strict
+    // OpenAI-compatible upstreams reject. Anchor on the last tool that can be cached,
+    // since Anthropic rejects cache_control on a defer_loading tool (#3567).
+    const outFormat = passthrough ? sourceFormat : targetFormat;
+    if (outFormat === FORMATS.CLAUDE && translatedBody.tools.length > 0 && (!passthrough || translatedBody.tools.length !== beforeN)) {
       for (const t of translatedBody.tools) delete t.cache_control;
-      translatedBody.tools[translatedBody.tools.length - 1].cache_control = { type: "ephemeral", ttl: "1h" };
+      const anchor = lastCacheableToolIndex(translatedBody.tools);
+      if (anchor !== -1) translatedBody.tools[anchor].cache_control = { type: "ephemeral", ttl: "1h" };
     }
 
     const afterN = translatedBody.tools.length;
