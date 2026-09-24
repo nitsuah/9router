@@ -35,6 +35,7 @@ vi.mock("@/sse/services/auth.js", () => ({
 
 vi.mock("@/sse/services/antigravityQuota.js", () => ({
   handleAntigravityQuotaError: mocks.handleAntigravityQuotaError,
+  clearAntigravityStrikes: vi.fn(),
 }));
 
 vi.mock("@/lib/localDb", () => ({
@@ -139,7 +140,7 @@ describe("chat.js account-selection loop (single model)", () => {
     expect(mocks.getProviderCredentials).toHaveBeenCalledTimes(1);
   });
 
-  it("surfaces an unavailableResponse once every account is rate-limited, using the last observed error/status", async () => {
+  it("surfaces a 503 unavailableResponse once every account is rate-limited, carrying the last observed error", async () => {
     const credA = { connectionId: "conn-a", connectionName: "Acct A" };
     mocks.getProviderCredentials
       .mockResolvedValueOnce(credA)
@@ -159,9 +160,9 @@ describe("chat.js account-selection loop (single model)", () => {
     const res = await handleChat(chatRequest({ model: "openai/gpt-4o", messages: [{ role: "user", content: "hi" }] }));
     const body = await res.json();
 
-    // Uses the loop's own lastStatus/lastError (429/"rate limited") in preference
-    // to the stale values on the allRateLimited sentinel.
-    expect(res.status).toBe(429);
+    // Always 503 (service unavailable until the earliest reset), but the message uses the
+    // loop's own lastError ("rate limited") in preference to the stale sentinel value.
+    expect(res.status).toBe(503);
     expect(body.error.message).toContain("rate limited");
     expect(res.headers.get("Retry-After")).toBeTruthy();
   });

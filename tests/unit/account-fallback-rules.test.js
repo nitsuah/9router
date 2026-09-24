@@ -44,26 +44,25 @@ describe("checkFallbackError decision matrix", () => {
     }
   });
 
-  // Documents current behavior rather than asserting a requirement: there is no rule
-  // anywhere in this file that ever returns shouldFallback:false. A malformed-request
-  // 400 (a client-side bug that will reproduce identically on every other account/model)
-  // is classified exactly like a transient 503. See PR description "Findings for
-  // maintainer triage" — this is flagged, not fixed, per this PR's test-only scope.
-  it("a definitively non-retryable 400 (malformed request) is currently classified the same as a transient error", () => {
+  // This file originally flagged that a malformed-request 400 was cooled down like a
+  // transient 503. Master has since fixed it: request-scoped 4xx errors that match no
+  // rule return the upstream error for this request without cooling the account down.
+  it("does not cool the account down for a definitively non-retryable 400 (malformed request)", () => {
     const malformed = checkFallbackError(400, "Invalid schema: 'tool_choice' is not supported for this model", 0);
-    const transient503 = checkFallbackError(503, "upstream had a bad day", 0);
-    expect(malformed.shouldFallback).toBe(true);
-    expect(malformed.cooldownMs).toBe(transient503.cooldownMs);
+    expect(malformed).toEqual({ shouldFallback: false, cooldownMs: 0 });
   });
 
-  it("never returns shouldFallback:false for any status/text combination it classifies", () => {
-    const samples = [
-      [400, "bad request"], [401, "unauthorized"], [402, "payment required"],
-      [403, "forbidden"], [404, "not found"], [429, "too many requests"],
-      [500, "server error"], [503, "unavailable"], [200, "quota exceeded"],
+  it("falls back for account-scoped and transient failures, not for request-scoped 4xx", () => {
+    const fallsBack = [
+      [401, "unauthorized"], [402, "payment required"], [403, "forbidden"],
+      [429, "too many requests"], [500, "server error"], [503, "unavailable"],
+      [200, "quota exceeded"],
     ];
-    for (const [status, text] of samples) {
-      expect(checkFallbackError(status, text, 0).shouldFallback).toBe(true);
+    for (const [status, text] of fallsBack) {
+      expect(checkFallbackError(status, text, 0).shouldFallback, `${status} ${text}`).toBe(true);
+    }
+    for (const [status, text] of [[400, "bad request"], [422, "unprocessable entity"]]) {
+      expect(checkFallbackError(status, text, 0), `${status} ${text}`).toEqual({ shouldFallback: false, cooldownMs: 0 });
     }
   });
 
