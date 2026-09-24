@@ -17,3 +17,5 @@ unit/remote-ssrf-route-guards.test.js
 unit/usage-stats-apikey-redaction.test.js
 # From #4289 (example credentials) — active once merged
 unit/login-placeholder-initial-password.test.js
+# From #3499 (settings re-auth) — active once merged
+unit/settings-reauth.test.js
