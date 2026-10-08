@@ -29,10 +29,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      # Root package-lock.json is committed by #4290; use npm ci for reproducible dependency resolution.
-      - run: npm ci --no-audit --no-fund
-      # --legacy-peer-deps: without a lockfile, npm's peer-set resolver crashes on vitest 4
-      # ("Cannot read properties of null (reading 'edgesOut')").
+      # master does not yet contain package-lock.json (#4290 is separate); use npm install until it lands.
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - run: npm install --no-audit --no-fund --legacy-peer-deps
         working-directory: tests
       - name: Run tests listed in tests/security-suite.txt (hard gate)
@@ -55,9 +53,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm ci --no-audit --no-fund
-      # --legacy-peer-deps: without a lockfile, npm's peer-set resolver crashes on vitest 4
-      # ("Cannot read properties of null (reading 'edgesOut')").
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - run: npm install --no-audit --no-fund --legacy-peer-deps
         working-directory: tests
       # The suite is not all-green yet; known failures live in
@@ -84,7 +80,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - run: npm run build
 
   dependency-audit:
@@ -96,7 +92,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm ci --no-audit --no-fund
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - name: npm audit (production deps, high+)
         run: npm audit --omit=dev --audit-level=high
 
@@ -141,7 +137,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm install --no-audit --no-fund
+      - run: npm install --no-audit --no-fund --legacy-peer-deps
       - name: ESLint on changed JS files
         continue-on-error: true
         env:
