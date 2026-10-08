@@ -60,7 +60,7 @@ PUBLIC.md
 Thanks.md
 PUBLIC.en.md
 PR/*
-package-lock.json
+ # Root package-lock.json is committed for reproducible npm ci builds.\ncli/package-lock.json\ntests/package-lock.json
 
 
 #Ignore vscode AI rules
