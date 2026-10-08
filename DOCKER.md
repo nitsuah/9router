@@ -203,6 +203,12 @@ During recovery, the selected tag remains the application source while the Docke
 
 The workflow is tag-driven. Creating a git tag does not automatically create a GitHub Release, so the Releases page and the published package/image tags can be at different versions unless a maintainer creates a release separately.
 
+### Release freshness guard
+
+The `Release freshness guard` workflow runs daily and on demand. It checks that the root and CLI package versions agree, the matching `vX.Y.Z` git tag exists, and the same numbered image is present on Docker Hub. It fails with an actionable summary when the source version has not been tagged or published.
+
+This guard intentionally **does not create tags or publish images automatically**: a package version bump alone is not sufficient evidence that a release is approved. It makes a missed release handoff visible while keeping the existing tag-driven publishing and smoke-test gates in control.
+
 The upstream repository needs these repository secrets for Docker Hub publishing:
 
 - `DOCKERHUB_USERNAME`
@@ -212,4 +218,6 @@ GHCR publishing uses the workflow's `GITHUB_TOKEN` with package write permission
 
 The optional repository variables `ALPINE_MIRROR` and `NPM_REGISTRY` can override the default package mirrors used by the CI Docker build.
 
-Workflow: `.github/workflows/docker-publish.yml`
+Workflows:
+- `.github/workflows/docker-publish.yml`
+- `.github/workflows/release-freshness.yml`
