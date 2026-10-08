@@ -170,9 +170,11 @@ The `v` prefix is used only for the git tag; image tags omit it. A stable tag pu
 The workflow rejects SemVer build metadata such as `v1.2.3+build.7` because the `+` form is not a valid Docker image tag. The git tag and both `package.json` versions must match exactly.
 
 ```bash
-# After verifying both package versions and release notes
-git tag v0.5.99
-git push origin v0.5.99
+# After verifying release readiness
+VERSION="$(node -p "require('./package.json').version")"
+test "$(node -p "require('./cli/package.json').version")" = "$VERSION"
+git tag "v$VERSION"
+git push origin "v$VERSION"
 ```
 
 To republish an existing tag, run the `Build and Push Docker Image` workflow manually and provide the exact tag, for example `v0.5.81`, in the `release_tag` input. Manual runs publish the numbered tag but leave `latest` unchanged by default:
