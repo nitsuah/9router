@@ -94,6 +94,8 @@ If Headroom runs on the Docker host instead of as a sidecar, use `http://host.do
 
 ## Update to latest
 
+For a standalone `docker run` deployment, update manually:
+
 ```bash
 docker pull decolua/9router:latest
 docker rm -f 9router
@@ -105,6 +107,32 @@ To pin a specific version instead of following `latest`, use a numbered image ta
 ```bash
 docker pull decolua/9router:0.5.81
 ```
+
+## Automatic updates with Docker Compose
+
+The repository's `docker-compose.yml` includes [freshdock](https://github.com/Turbootzz/freshdock), a health-gated container updater. It checks the 9Router image nightly and recreates the service only when a newer image is available. The updater verifies the new container using the `/api/health` Docker health check and rolls back to the previous container if the new image fails verification. The existing `9router-data` volume is preserved.
+
+Start or update the Compose stack with:
+
+```bash
+docker compose pull
+docker compose up -d
+docker compose ps
+docker inspect --format '{{json .State.Health}}' 9router
+docker logs -f freshdock
+```
+
+Only the 9Router service is opted into scheduled updates. Headroom is not opted in, and freshdock excludes itself from updating. The updater image is pinned to a specific version so its own runtime does not silently change; update that pin deliberately when upgrading freshdock.
+
+### Disable automatic updates
+
+Remove the `freshdock` service from `docker-compose.yml` and remove the `freshdock.enable` and `freshdock.mode` labels from the `9router` service, then run `docker compose up -d`. To keep the updater but stop updates to 9Router, set `freshdock.mode: "off"` or remove `freshdock.enable`.
+
+### Security note
+
+freshdock needs access to `/var/run/docker.sock` to inspect and recreate containers. Docker socket access is effectively host-level administrative access; only run an updater you trust, keep its image pinned, and do not expose the Docker API over an unauthenticated network. Automatic updates follow the moving `decolua/9router:latest` tag. For deterministic deployments, use a numbered image tag and disable the `freshdock` update labels.
+
+The health check confirms that `/api/health` responds successfully; it cannot prove that every configured upstream provider or integration is working.
 
 ---
 
