@@ -113,6 +113,7 @@ export async function exchangeOidcCode({
   code,
   redirectUri,
   codeVerifier,
+  fetchImpl = fetch,
 }) {
   const body = new URLSearchParams({
     grant_type: "authorization_code",
