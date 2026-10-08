@@ -49,7 +49,7 @@ jobs:
             }
 
             const tag = `v${root}`;
-            const repository = process.env.GITHUB_REPOSITORY;
+            const repository = "decolua/9router";
             const headers = {
               Accept: "application/vnd.github+json",
               "X-GitHub-Api-Version": "2022-11-28",
