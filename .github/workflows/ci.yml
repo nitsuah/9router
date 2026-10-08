@@ -29,8 +29,8 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      # No committed root lockfile (package-lock.json is gitignored), so `npm ci` is not possible.
-      - run: npm install --no-audit --no-fund
+      # Root package-lock.json is committed by #4290; use npm ci for reproducible dependency resolution.
+      - run: npm ci --no-audit --no-fund
       # --legacy-peer-deps: without a lockfile, npm's peer-set resolver crashes on vitest 4
       # ("Cannot read properties of null (reading 'edgesOut')").
       - run: npm install --no-audit --no-fund --legacy-peer-deps
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       # --legacy-peer-deps: without a lockfile, npm's peer-set resolver crashes on vitest 4
       # ("Cannot read properties of null (reading 'edgesOut')").
       - run: npm install --no-audit --no-fund --legacy-peer-deps
@@ -84,7 +84,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      - run: npm install --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - run: npm run build
 
   dependency-audit:
@@ -96,8 +96,7 @@ jobs:
       - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
         with:
           node-version: ${{ env.NODE_VERSION }}
-      # Resolve a lockfile the same way the Docker image does, then audit what ships.
-      - run: npm install --package-lock-only --no-audit --no-fund
+      - run: npm ci --no-audit --no-fund
       - name: npm audit (production deps, high+)
         run: npm audit --omit=dev --audit-level=high
 
