@@ -12,7 +12,7 @@ on:
       - ".github/workflows/gitbook-pr.yml"
 
 concurrency:
-  group: gitbook-pr
+  group: gitbook-pr-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -25,6 +25,8 @@ jobs:
         working-directory: gitbook
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - uses: actions/setup-node@v6
         with:
