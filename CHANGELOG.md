@@ -10,7 +10,7 @@
 - **Models**: `/v1/models` publishes `thinking_levels`, and opencode settings derive the effort variants from the same source
 
 ## Fixes
-- **cloudflare-ai**: drop Workers AI models retiring 2026-11-20 (Llama 3.2 1B/3B, DeepSeek R1 distill, Kimi K2.6, QwQ 32B, SDXL Lightning/DreamShaper/SD inpainting/SDXL Base, plus already-gone Llama 3.1 FP8/AWQ/70B and Kimi K2.5/img2img) and add Gemma 4 26B, Qwen 3.8 27B, DeepSeek V4.1 Flash 1017, GLM 5.3, and Llama 4 Scout; image retirees map to existing FLUX.2 Klein 9B
+- **cloudflare-ai**: drop Workers AI models retiring 2026-11-20 (Llama 3.2 1B/3B, DeepSeek R1 distill, Kimi K2.6, QwQ 32B, SDXL Lightning/DreamShaper/SD inpainting/SDXL Base, plus already-gone Llama 3.1 FP8/AWQ/70B and Kimi K2.5/img2img) and add Gemma 4 26B, Qwen 3.8 27B, DeepSeek V4.1 Flash 1017, GLM 5.3, and Llama 4 Scout; image retirees map to existing FLUX.2 Klein 9B. Also pin CF-documented reasoning levels for Qwen 3.8 (`low|medium|xhigh`) and GLM-5.3 (`low|high|max`), and omit `reasoning_effort: "auto"` when the model does not advertise it
 - **Transport**: keep undici on 7.30.2 — undici 8 requires Node 22.19+, so 0.5.116 crashed every outbound `fetch` on older runtimes (`createZstdDecompress.bind` is undefined below Node 22.15). 7.30.2 carries the same security fixes and the stale-socket/happy-eyeballs transport work.
 - **Node floor**: declare `engines.node >= 20.18.1` in both packages (the root manifest had none, the CLI claimed `>=18`).
 - **SenseNova**: add `sensenova-intl` provider on `token.sensenova.ai` for international keys (the `.cn` host returns 401 Forbidden for them)
