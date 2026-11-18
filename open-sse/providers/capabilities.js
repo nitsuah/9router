@@ -402,6 +402,26 @@ export const PROVIDER_CAPABILITIES = {
     // published efforts from low/high/xhigh to low/high/max.
     "deepseek-v4.1-flash": { vision: true, reasoning: true, thinkingFormat: "openai", thinkingCanDisable: true, contextWindow: 1000000, maxOutput: 393216 },
   },
+  // Cloudflare Workers AI — OpenAI-compatible chat; per-model reasoning_effort
+  // enums differ from the generic *qwen* / *glm-5.3* native shapes, so force
+  // openai thinkingFormat and the documented canDisable flags here.
+  "cloudflare-ai": {
+    "@cf/qwen/qwen3.8-27b": {
+      vision: true,
+      reasoning: true,
+      thinkingFormat: "openai",
+      thinkingCanDisable: false,
+      contextWindow: 262144,
+      maxOutput: 65536,
+    },
+    "@cf/zai-org/glm-5.3": {
+      reasoning: true,
+      thinkingFormat: "openai",
+      thinkingCanDisable: false,
+      contextWindow: 1048576,
+      maxOutput: 128000,
+    },
+  },
   // Poolside Laguna — OpenAI-compatible, all reasoning-capable (32K max output).
   "poolside": {
     "laguna-s-2.1":  { reasoning: true, thinkingFormat: "openai", contextWindow: 1000000, maxOutput: 32000 },
@@ -475,6 +495,7 @@ PROVIDER_CAPABILITIES["qoder"] = {
 // the intl Qoder capability table verbatim (vision/reasoning/contextWindow).
 PROVIDER_CAPABILITIES["qoder-cn"] = PROVIDER_CAPABILITIES["qoder"];
 PROVIDER_CAPABILITIES.cx = PROVIDER_CAPABILITIES.codex;
+PROVIDER_CAPABILITIES.cf = PROVIDER_CAPABILITIES["cloudflare-ai"];
 PROVIDER_CAPABILITIES.dv = PROVIDER_CAPABILITIES["devin-cli"];
 PROVIDER_CAPABILITIES.devin = PROVIDER_CAPABILITIES["devin-cli"];
 // The global mcode site serves the same catalog — share the capability table.

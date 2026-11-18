@@ -553,13 +553,15 @@ describe("handleImageGenerationCore", () => {
     expect(fetchCall[1].body.get("steps")).toBe("4");
   });
 
-  it("resolves Cloudflare img2img and inpainting URL inputs before sending", async () => {
+  // SD inpainting retired; keep coverage of JSON-body image/mask URL resolution
+  // on a still-JSON Cloudflare model (FLUX.2 uses multipart instead).
+  it("resolves Cloudflare image and mask URL inputs into JSON body fields", async () => {
     global.fetch
       .mockResolvedValueOnce(new Response(new Uint8Array([1, 2, 3]), { status: 200, headers: { "Content-Type": "image/png" } }))
       .mockResolvedValueOnce(new Response(new Uint8Array([4, 5, 6]), { status: 200, headers: { "Content-Type": "image/png" } }))
       .mockResolvedValueOnce(
         new Response(
-          JSON.stringify({ result: { image: "base64inpaint" }, success: true }),
+          JSON.stringify({ result: { image: "base64cloudflare" }, success: true }),
           { status: 200, headers: { "Content-Type": "application/json" } }
         )
       );
@@ -571,7 +573,7 @@ describe("handleImageGenerationCore", () => {
         mask_image: "https://example.com/mask.png",
         size: "512x512",
       },
-      modelInfo: { provider: "cloudflare-ai", model: "@cf/runwayml/stable-diffusion-v1-5-inpainting" },
+      modelInfo: { provider: "cloudflare-ai", model: "@cf/leonardo/lucid-origin" },
       credentials: {
         apiKey: "cf-token",
         providerSpecificData: { accountId: "cf-account" },
@@ -584,7 +586,7 @@ describe("handleImageGenerationCore", () => {
     expect(global.fetch).toHaveBeenNthCalledWith(2, "https://example.com/mask.png");
 
     const providerCall = global.fetch.mock.calls[2];
-    expect(providerCall[0]).toBe("https://api.cloudflare.com/client/v4/accounts/cf-account/ai/run/@cf/runwayml/stable-diffusion-v1-5-inpainting");
+    expect(providerCall[0]).toBe("https://api.cloudflare.com/client/v4/accounts/cf-account/ai/run/@cf/leonardo/lucid-origin");
     const requestBody = JSON.parse(providerCall[1].body);
     expect(requestBody.image).toEqual([1, 2, 3]);
     expect(requestBody.image_b64).toBe(Buffer.from([1, 2, 3]).toString("base64"));
