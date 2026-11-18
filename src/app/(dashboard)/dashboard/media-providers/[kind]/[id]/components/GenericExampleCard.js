@@ -7,22 +7,15 @@ import { getModelsByProviderId, getModelKind } from "@/shared/constants/models";
 import { useCopyToClipboard } from "@/shared/hooks/useCopyToClipboard";
 import { Row, KIND_EXAMPLE_CONFIG } from "./exampleShared";
 
-const CLOUDFLARE_TEST_IMAGE_URL = "https://pub-1fb693cb11cc46b2b2f656f51e015a2c.r2.dev/dog.png";
-const CLOUDFLARE_TEST_MASK_URL = "https://pub-1fb693cb11cc46b2b2f656f51e015a2c.r2.dev/dog-mask.png";
 // HuggingFace router edit models need a source image; reuse the public dog sample so
 // the card is runnable as-is. The router derives it from inputs, not from the Hub host.
-const HUGGINGFACE_TEST_IMAGE_URL = CLOUDFLARE_TEST_IMAGE_URL;
+const HUGGINGFACE_TEST_IMAGE_URL = "https://pub-1fb693cb11cc46b2b2f656f51e015a2c.r2.dev/dog.png";
 
-function getImageEditDefaults(providerId, modelId) {
+function getImageEditDefaults(providerId, _modelId) {
+  // Cloudflare retired its SD img2img/inpainting models (→ FLUX.2); only
+  // Hugging Face edit models still need a runnable default source image.
   if (providerId === "huggingface") {
     return { image: HUGGINGFACE_TEST_IMAGE_URL };
-  }
-  if (providerId !== "cloudflare-ai") return {};
-  if (modelId === "@cf/runwayml/stable-diffusion-v1-5-img2img") {
-    return { image: CLOUDFLARE_TEST_IMAGE_URL };
-  }
-  if (modelId === "@cf/runwayml/stable-diffusion-v1-5-inpainting") {
-    return { image: CLOUDFLARE_TEST_IMAGE_URL, mask_image: CLOUDFLARE_TEST_MASK_URL };
   }
   return {};
 }

@@ -84,6 +84,10 @@ const PATTERN_THINKING = [
   // fall through to the openai format default.
   { provider: "codebuddy-cn", pattern: "glm-5.3",      levels: ["low", "high", "max"] },
   { provider: "codebuddy-cn", pattern: "glm-5.3-flash", levels: ["low", "high", "max"] },
+  // Cloudflare Workers AI publishes per-model reasoning_effort enums that differ
+  // from the generic *qwen* / *glm-5.3* format defaults (and reject "auto").
+  { provider: "cloudflare-ai", pattern: "*qwen3.8-27b*", levels: ["low", "medium", "xhigh"] },
+  { provider: "cloudflare-ai", pattern: "*glm-5.3*", levels: ["low", "high", "max"] },
   { provider: "codebuddy-cn", pattern: "glm-5.2",      levels: ["high", "xhigh"] },
   { provider: "codebuddy-cn", pattern: "kimi-k2.8-preview",  levels: ["low", "medium", "high"] },
   { provider: "codebuddy-cn", pattern: "hy3",          levels: ["low", "high"] },

@@ -273,6 +273,10 @@ function applyFormat(fmt, body, cfg, caps, supportedLevels, display, model = "",
     case "openai": {
       if (none && canDisable) { body.reasoning_effort = "none"; break; }
       const level = toLevel(eff);
+      // "auto" is OpenAI-native; Cloudflare GLM/Qwen (and similar) reject it —
+      // omit the field so the upstream default applies when it is not advertised.
+      // Leave other out-of-set levels alone: some hosts (e.g. CF GLM) alias them.
+      if (level === "auto" && supportedLevels && !supportedLevels.includes("auto")) break;
       if (level) body.reasoning_effort = normalizeOpenAILevel(level, supportedLevels);
       break;
     }
